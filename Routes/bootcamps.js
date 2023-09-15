@@ -1,6 +1,6 @@
 const express = require("express");
 const {
-  test,
+  getBootcampsInRadius,
   getBootcamp,
   getBootcamps,
   createBootcamp,
@@ -10,14 +10,15 @@ const {
 
 const router = express.Router();
 
-
 // Generate routes and use .routes to establish connection between router and controller (MVC architecture)
+router.route("/radius/:zipcode/:distance").get(getBootcampsInRadius);
 
 router.route("/").get(getBootcamps).post(createBootcamp);
 
-//test please delete
-router.route('/test').get(test);
-
-router.route("/:id").get(getBootcamp).put(updateBootcamp).delete(deleteBootcamp);
+router
+  .route("/:id")
+  .get(getBootcamp)
+  .put(updateBootcamp)
+  .delete(deleteBootcamp);
 
 module.exports = router;
