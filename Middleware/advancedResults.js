@@ -3,6 +3,7 @@ const advancedResults = (model, populate) => async (req, res, next) => {
 
   // Making a copy of the query
   const reqQuery = { ...req.query };
+  
   // Field to exclude
   const removeFields = ["select", "sort", "page", "limit"];
   // Loop over removeFields and delete them from reqQuery

@@ -1,5 +1,5 @@
 const Course = require("../Models/Course");
-const Bootcamp = require('../Models/Bootcamp');
+const Bootcamp = require("../Models/Bootcamp");
 const ErrorResponse = require("../Utils/errorResponse");
 const asyncHandler = require("../Middleware/async");
 
@@ -8,29 +8,18 @@ const asyncHandler = require("../Middleware/async");
 //@route    GET/api/v1/bootcamps/:bootcampId/courses
 //@access   Public
 exports.getCourses = asyncHandler(async (req, res, next) => {
-  let query;
-
   if (req.params.bootcampId) {
-    query = Course.find({ bootcamp: req.params.bootcampId });
+    const courses = await Course.find({ bootcamp: req.params.bootcampId });
+    return res
+      .status(200)
+      .json({ success: true, count: courses.length, data: courses });
   } else {
     // as relationship is established b/w course and bootcamps we can use the populate method on the Courses model's bootcamp field
     // (vice versa is not possible as no connection in courses and bootcamps is present in Bootcamps model)
     // to fix this we use Mongoose Virtuals
-    query = Course.find().populate({
-      path: "bootcamp",
-      select: "name description",
-    });
+    res.status(200).json(res.advancedResults);
   }
-
-  const courses = await query;
-
-  res.status(200).json({
-    success: true,
-    count: courses.length,
-    data: courses,
-  });
 });
-
 
 //@desc     Get Courses
 //@route    GET/api/v1/courses/:id
@@ -38,12 +27,15 @@ exports.getCourses = asyncHandler(async (req, res, next) => {
 
 exports.getCourse = asyncHandler(async (req, res, next) => {
   const course = await Course.findById(req.params.id).populate({
-    path: 'bootcamp',
-    select:'name description'
+    path: "bootcamp",
+    select: "name description",
   });
 
-  if(!course){
-    return next(new ErrorResponse(`No course with the id of ${req.params.id}`),404);
+  if (!course) {
+    return next(
+      new ErrorResponse(`No course with the id of ${req.params.id}`),
+      404
+    );
   }
 
   res.status(200).json({
@@ -52,19 +44,31 @@ exports.getCourse = asyncHandler(async (req, res, next) => {
   });
 });
 
-
 //@desc     Add a course
 //@route    POST/api/v1/bootcamps/:bootcampId/courses
 //@access   Private
 
 exports.addCourse = asyncHandler(async (req, res, next) => {
-  
   req.body.bootcamp = req.params.bootcampId;
-  
+  req.body.user = req.user.id;
+
   const bootcamp = await Bootcamp.findById(req.params.bootcampId);
 
-  if(!bootcamp){
-    return next(new ErrorResponse(`No bootcamp with the id of ${req.params.bootcampId}`),404);
+  if (!bootcamp) {
+    return next(
+      new ErrorResponse(`No bootcamp with the id of ${req.params.bootcampId}`),
+      404
+    );
+  }
+
+  // Make sure user is bootcamp owner/publisher
+  if (bootcamp.user.toString() !== req.user.id && req.user.role !== "admin") {
+    return next(
+      new ErrorResponse(
+        `User ${req.user.id} is not authorized to add a course to bootcamp ${bootcamp._id}`,
+        401
+      )
+    );
   }
 
   const course = await Course.create(req.body);
@@ -75,22 +79,33 @@ exports.addCourse = asyncHandler(async (req, res, next) => {
   });
 });
 
-
 //@desc     Update course
 //@route    PUT/api/v1/courses/:id
 //@access   Private
 
 exports.updateCourse = asyncHandler(async (req, res, next) => {
-  
   let course = await Course.findById(req.params.id);
 
-  if(!course){
-    return next(new ErrorResponse(`No course with the id of ${req.params.id}`),404);
+  if (!course) {
+    return next(
+      new ErrorResponse(`No course with the id of ${req.params.id}`),
+      404
+    );
+  }
+
+  // Make sure user is bootcamp owner/publisher
+  if (course.user.toString() !== req.user.id && req.user.role !== "admin") {
+    return next(
+      new ErrorResponse(
+        `User ${req.user.id} is not authorized to update course ${course._id}`,
+        401
+      )
+    );
   }
 
   course = await Course.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
-    runValidators: true
+    runValidators: true,
   });
 
   res.status(200).json({
@@ -99,17 +114,28 @@ exports.updateCourse = asyncHandler(async (req, res, next) => {
   });
 });
 
-
 //@desc     Delete course
 //@route    Delete/api/v1/courses/:id
 //@access   Private
 
 exports.deleteCourse = asyncHandler(async (req, res, next) => {
-  
   const course = await Course.findById(req.params.id);
 
-  if(!course){
-    return next(new ErrorResponse(`No course with the id of ${req.params.id}`),404);
+  if (!course) {
+    return next(
+      new ErrorResponse(`No course with the id of ${req.params.id}`),
+      404
+    );
+  }
+
+  // Make sure user is bootcamp owner/publisher
+  if (course.user.toString() !== req.user.id && req.user.role !== "admin") {
+    return next(
+      new ErrorResponse(
+        `User ${req.user.id} is not authorized to delete course ${course._id}`,
+        401
+      )
+    );
   }
 
   await course.deleteOne();

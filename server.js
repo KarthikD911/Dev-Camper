@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const colors = require("colors");
 const fileupload = require("express-fileupload");
+const cookieParser = require('cookie-parser');
 const errorHandler = require("./Middleware/error");
 
 // morgan for dev logging
@@ -18,12 +19,17 @@ connectDB();
 // Router files
 const bootcamps = require("./Routes/bootcamps");
 const courses = require("./Routes/courses");
+const auth = require('./Routes/auth');
+const users = require('./Routes/users');
 
 // Starting express
 const app = express();
 
 // Parsing the Body (we can also use body-parser but this does the same work)
 app.use(express.json());
+
+// To use cookie parser to save token
+app.use(cookieParser());
 
 // Dev logging middleware
 if (process.env.NODE_ENV === "development") {
@@ -38,6 +44,8 @@ app.use(express.static(path.join(__dirname, "public")));
 // Mount Router
 app.use("/api/v1/bootcamps", bootcamps);
 app.use("/api/v1/courses", courses);
+app.use("/api/v1/auth", auth);
+app.use("/api/v1/users", users);
 
 // Handeling Errors
 app.use(errorHandler);

@@ -100,6 +100,11 @@ const BootcampSchema = new Schema(
       type: Date,
       default: Date.now,
     },
+    user: {
+      type: mongoose.Schema.ObjectId,
+      ref: "User",
+      required: true,
+    },
   },
   {
     // to populate a field courses without establishing actual relation b/w the 2 collections (from Bootcamps side)
