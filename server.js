@@ -4,8 +4,14 @@ const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const colors = require("colors");
 const fileupload = require("express-fileupload");
-const cookieParser = require('cookie-parser');
+const cookieParser = require("cookie-parser");
 const errorHandler = require("./Middleware/error");
+const mongoSanitize = require("express-mongo-sanitize");
+const helmet = require("helmet");
+const xss = require("xss-clean");
+const rateLimit = require("express-rate-limit");
+const hpp = require("hpp");
+const cors = require("cors");
 
 // morgan for dev logging
 const morgan = require("morgan");
@@ -19,8 +25,9 @@ connectDB();
 // Router files
 const bootcamps = require("./Routes/bootcamps");
 const courses = require("./Routes/courses");
-const auth = require('./Routes/auth');
-const users = require('./Routes/users');
+const auth = require("./Routes/auth");
+const users = require("./Routes/users");
+const reviews = require("./Routes/reviews");
 
 // Starting express
 const app = express();
@@ -41,11 +48,34 @@ app.use(fileupload());
 // Set static folder
 app.use(express.static(path.join(__dirname, "public")));
 
+// Sanatize data
+app.use(mongoSanitize());
+
+// Set security headers
+app.use(helmet());
+
+// Prevent XSS attacks
+app.use(xss());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 mins
+  max: 100,
+});
+app.use(limiter);
+
+// Prevent http params pollution
+app.use(hpp());
+
+// Enable cors
+app.use(cors());
+
 // Mount Router
 app.use("/api/v1/bootcamps", bootcamps);
 app.use("/api/v1/courses", courses);
 app.use("/api/v1/auth", auth);
 app.use("/api/v1/users", users);
+app.use("/api/v1/reviews", reviews);
 
 // Handeling Errors
 app.use(errorHandler);
